@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "4HKlkfwJppAKagcP+ASLiPHgILgCeoxNy70iIq5cxo2WHm4rtVexTokObKowVsexPlxKa6jn5wXTzHBIyIK8Uw==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Matthew\\source\\repos\\MHFZASS\\MHFZASS\\MHFZASS.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Matthew\\.nuget\\packages\\csvhelper\\30.0.1\\csvhelper.30.0.1.nupkg.sha512"
+  ],
+  "logs": []
+}
