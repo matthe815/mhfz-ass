@@ -88,6 +88,18 @@ namespace MHFZASS
             public Armor arms;
             public Armor waist;
             public Armor legs;
+
+            public Resistances resistances;
+
+            public ArmorSet()
+            {
+                head = new Armor();
+                torso = new Armor();
+                arms = new Armor();
+                waist = new Armor();
+                legs = new Armor();
+                resistances = new Resistances();
+            }
         }
 
         static List<Skill> skills = new List<Skill>();
@@ -121,56 +133,133 @@ namespace MHFZASS
             List<ArmorSet> list = new List<ArmorSet>();
 
             List<Armor> matchesConditions = FindMatchingSets();
+            List<Armor> helms = GetArmorOfType(matchesConditions, "頭");
+            List<Armor> torsos = GetArmorOfType(matchesConditions, "胴");
+            List<Armor> armsss = GetArmorOfType(matchesConditions, "腕");
+            List<Armor> waists = GetArmorOfType(matchesConditions, "腰");
+            List<Armor> legsss = GetArmorOfType(matchesConditions, "脚");
 
-            foreach(Armor armor in matchesConditions)
+            int minimumDefense = (int)numericUpDown1.Value;
+            int minimumFire = (int)numericUpDown10.Value;
+            int minimumWater = (int)numericUpDown9.Value;
+            int minimumThunder = (int)numericUpDown8.Value;
+            int minimumIce = (int)numericUpDown7.Value;
+            int minimumDragon = (int)numericUpDown6.Value;
+
+            foreach (Armor helmet in helms)
             {
-                if (list.Count >= 50) break;
 
-                Armor torso = new Armor();
-                Armor arms = new Armor();
-                Armor waist = new Armor();
-                Armor legs = new Armor();
+                ArmorSet set = new ArmorSet();
+                set.head = helmet;
 
-                if (armor.equipClass == "頭")
+                // Truncate here
+                if (list.Count > 1000) break;
+
+                // Skip over bad results.
+                if (helmet.baseDefense < (minimumDefense / 8)) continue;
+
+                foreach (Armor torso in torsos)
                 {
-                    foreach(Armor armor1 in matchesConditions)
+                    set.torso = torso;
+
+                    // Truncate here
+                    if (list.Count > 1000) break;
+
+                    // Skip over bad results.
+                    if (torso.baseDefense < (minimumDefense / 8)) continue;
+
+                    foreach (Armor arms in armsss)
                     {
-                        switch (armor1.equipClass)
+                        set.arms = arms;
+
+                        // Truncate here
+                        if (list.Count > 1000) break;
+
+                        // Skip over bad results.
+                        if (arms.baseDefense < (minimumDefense / 8)) continue;
+
+                        foreach (Armor waist in waists)
                         {
-                            case "胴":
-                                if (torso.name == null) torso = armor1;
-                                break;
+                            set.waist = waist;
 
-                            case "腕":
-                                if (arms.name == null) arms = armor1;
-                                break;
+                            // Truncate here
+                            if (list.Count > 1000) break;
 
-                            case "腰":
-                                if (waist.name == null) waist = armor1;
-                                break;
+                            // Skip over bad results.
+                            if (waist.baseDefense < (minimumDefense / 8)) continue;
 
-                            case "脚":
-                                if (legs.name == null) legs = armor1;
-                                break;
+                            foreach (Armor legs in legsss)
+                            {
+                                // Skip over bad results.
+                                if (legs.baseDefense < (minimumDefense / 8)) continue;
+
+                                // Truncate here
+                                if (list.Count > 1000) break;
+
+                                set.legs = legs;
+
+                                set.resistances = GetDefense(set);
+
+                                if (set.resistances.defense < minimumDefense) continue;
+                                if (set.resistances.fire < minimumFire) continue;
+                                if (set.resistances.ice < minimumIce) continue;
+                                if (set.resistances.thunder < minimumThunder) continue;
+                                if (set.resistances.water < minimumWater) continue;
+                                if (set.resistances.dragon < minimumDragon) continue;
+                                if (!FitsConditions(set)) continue;
+
+                                list.Add(set);
+                            }
                         }
                     }
-                    ArmorSet set = new ArmorSet();
-                    set.head = armor;
-                    set.torso = torso;
-                    set.arms = arms;
-                    set.waist = waist;
-                    set.legs = legs;
-
-                    if (!FitsConditions(set)) continue;
-
-                    list.Add(set);
-                } else
-                {
-                    break;
                 }
             }
 
             return list;
+        }
+
+        List<Armor> GetArmorOfType(List<Armor> matching, string type)
+        {
+            List<Armor> list = new List<Armor>();
+            
+            foreach(Armor armor in matching)
+            {
+                if (armor.equipClass == type) list.Add(armor);
+            }
+
+            return list;
+        }
+
+        struct Resistances
+        {
+            public int defense;
+            public int fire;
+            public int water;
+            public int thunder;
+            public int ice;
+            public int dragon;
+        }
+
+        // Check the stat based conditions.
+        static Resistances GetDefense(ArmorSet set)
+        {
+            Resistances res = new Resistances();
+
+            Armor[] pieces = new Armor[] { set.head, set.torso, set.arms, set.waist, set.legs };
+
+            foreach (Armor armor in pieces)
+            {
+                double defenseMultiplier = 0.05 * 7;
+                int defenseModifier = (int)Math.Ceiling(armor.baseDefense * defenseMultiplier);
+                res.defense += armor.baseDefense + defenseModifier;
+                res.fire += armor.fireRes;
+                res.water += armor.waterRes;
+                res.ice += armor.iceRes;
+                res.dragon += armor.dragonRes;
+                res.thunder += armor.thunderRes;
+            }
+
+            return res;
         }
 
         bool FitsConditions(ArmorSet set)
@@ -251,6 +340,11 @@ namespace MHFZASS
             string skill3 = comboBox3.SelectedItem.ToString();
             string skill4 = comboBox4.SelectedItem.ToString();
 
+            int gender = comboBox6.SelectedIndex;
+            int weaponType = comboBox5.SelectedIndex;
+
+            // Zero out any null options
+            if (skill1 == "なし") skill1 = "";
             if (skill2 == "なし") skill2 = "";
             if (skill3 == "なし") skill3 = "";
             if (skill4 == "なし") skill4 = "";
@@ -258,6 +352,12 @@ namespace MHFZASS
             // Determine armors matching the base conditions.
             foreach (Armor armor in armors)
             {
+                if (!armor.isMaleEquip && gender == 0) continue;
+                if (!armor.isFemaleEquip && gender == 1) continue;
+
+                if (!armor.isBladeEquip && weaponType == 0) continue;
+                if (!armor.isGunnerEquip && weaponType == 1) continue;
+
                 string[] skills = new string[] { armor.skillId1, armor.skillId2, armor.skillId3, armor.skillId4 };
 
                 if (skills.Contains(skill1) || skills.Contains(skill2) || skills.Contains(skill3) || skills.Contains(skill4))
@@ -277,7 +377,6 @@ namespace MHFZASS
 
                 foreach (Armor armor in records)
                 {
-                    Console.WriteLine(armor.name);
                     armors.Add(armor);
                 }
             }
@@ -302,10 +401,24 @@ namespace MHFZASS
             }
         }
 
+        static List<ArmorSet> SortSets(List<ArmorSet> sets)
+        {
+            sets.Sort(SortByDefense);
+            return sets;
+        }
+
+        static int SortByDefense(ArmorSet set, ArmorSet set2)
+        {
+            if (set.resistances.defense < set2.resistances.defense) return 1;
+            if (set.resistances.defense > set2.resistances.defense) return -1;
+            return 0;
+        }
+
         private void button1_Click(object sender, EventArgs e)
         {
-            Console.WriteLine("Clicked");
             List<ArmorSet> compatibleSets = FindSets();
+            compatibleSets = SortSets(compatibleSets);
+
             treeView1.Nodes.Clear(); // Empty the list.
 
             int setNumber = 0;
@@ -319,6 +432,15 @@ namespace MHFZASS
                 node.Nodes.Add(armorSet.arms.name);
                 node.Nodes.Add(armorSet.waist.name);
                 node.Nodes.Add(armorSet.legs.name);
+
+                // Defenses and elemental resistances
+                node.Nodes.Add("Defense: " + armorSet.resistances.defense);
+
+                node.Nodes.Add("Fire: " + armorSet.resistances.fire);
+                node.Nodes.Add("Water: " + armorSet.resistances.water);
+                node.Nodes.Add("Thunder: " + armorSet.resistances.thunder);
+                node.Nodes.Add("Dragon: " + armorSet.resistances.dragon);
+                node.Nodes.Add("Ice: " + armorSet.resistances.ice);
 
                 setNumber++;
             }
