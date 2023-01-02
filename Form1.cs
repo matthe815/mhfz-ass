@@ -1,111 +1,12 @@
-using System.Collections.Generic;
+using MHFZASS.structs;
 
 namespace MHFZASS
 {
     public partial class Form1 : Form
     {
-        struct Skill
-        {
-            public string name;
-            public int points;
-
-            public Skill(string name, int points)
-            {
-                this.name = name;
-                this.points = points;
-            }
-        }
-
-        struct Armor
-        {
-            public String equipClass { get; set; }
-            public String name { get; set; }
-            public Int16 modelIdMale { get; set; }
-            public Int16 modelIdFemale { get; set; }
-            public Boolean isMaleEquip { get; set; }
-            public Boolean isFemaleEquip { get; set; }
-            public Boolean isBladeEquip { get; set; }
-            public Boolean isGunnerEquip { get; set; }
-            public Boolean bool1 { get; set; }
-            public Boolean isSPEquip { get; set; }
-            public Boolean bool3 { get; set; }
-            public Boolean bool4 { get; set; }
-            public Byte rarity { get; set; }
-            public Byte maxLevel { get; set; }
-            public Byte unk1_1 { get; set; }
-            public Byte unk1_2 { get; set; }
-            public Byte unk1_3 { get; set; }
-            public Byte unk1_4 { get; set; }
-            public Byte unk2 { get; set; }
-            public Int32 zennyCost { get; set; }
-            public Int16 unk3 { get; set; }
-            public Int16 baseDefense { get; set; }
-            public SByte fireRes { get; set; }
-            public SByte waterRes { get; set; }
-            public SByte thunderRes { get; set; }
-            public SByte dragonRes { get; set; }
-            public SByte iceRes { get; set; }
-            public Int16 unk3_1 { get; set; }
-            public Byte baseSlots { get; set; }
-            public Byte maxSlots { get; set; }
-            public Byte sthEventCrown { get; set; }
-            public Byte unk5 { get; set; }
-            public Byte unk6 { get; set; }
-            public Byte unk7_1 { get; set; }
-            public Byte unk7_2 { get; set; }
-            public Byte unk7_3 { get; set; }
-            public Byte unk7_4 { get; set; }
-            public Byte unk8_1 { get; set; }
-            public Byte unk8_2 { get; set; }
-            public Byte unk8_3 { get; set; }
-            public Byte unk8_4 { get; set; }
-            public Int16 unk10 { get; set; }
-            public String skillId1 { get; set; }
-            public SByte skillPts1 { get; set; }
-            public String skillId2 { get; set; }
-            public SByte skillPts2 { get; set; }
-            public String skillId3 { get; set; }
-            public SByte skillPts3 { get; set; }
-            public String skillId4 { get; set; }
-            public SByte skillPts4 { get; set; }
-            public String skillId5 { get; set; }
-            public SByte skillPts5 { get; set; }
-            public Int32 sthHiden { get; set; }
-            public Int32 unk12 { get; set; }
-            public Byte unk13 { get; set; }
-            public Byte unk14 { get; set; }
-            public Byte unk15 { get; set; }
-            public Byte unk16 { get; set; }
-            public Int32 unk17 { get; set; }
-            public Int16 unk18 { get; set; }
-            public Int16 unk19 { get; set; }
-        }
-
-        struct ArmorSet
-        {
-            public Armor head;
-            public Armor torso;
-            public Armor arms;
-            public Armor waist;
-            public Armor legs;
-
-            public Resistances resistances;
-            public List<String> activatedSkills;
-
-            public ArmorSet()
-            {
-                head = new Armor();
-                torso = new Armor();
-                arms = new Armor();
-                waist = new Armor();
-                legs = new Armor();
-                resistances = new Resistances();
-                activatedSkills = new List<String>();
-            }
-        }
-
         static List<Skill> skills = new List<Skill>();
         static List<Armor> armors = new List<Armor>();
+        static CancellationTokenSource cancelToken = new CancellationTokenSource();
 
         public Form1()
         {
@@ -124,6 +25,7 @@ namespace MHFZASS
                 comboBox3.Items.Add(skill.name);
                 comboBox4.Items.Add(skill.name);
             }
+
             comboBox1.SelectedIndex = 0;
             comboBox2.SelectedIndex = 0;
             comboBox3.SelectedIndex = 0;
@@ -132,11 +34,11 @@ namespace MHFZASS
             comboBox6.SelectedIndex = 0;
         }
 
-        bool ShouldTerminate(ArmorSet set, int count, DateTime startTime)
+        bool ShouldTerminate(ArmorSet set, int count)
         {
             // Truncate here
             if (count > 1000) return true;
-            if (DateTime.Now.Subtract(startTime).Seconds > 5) return true; // It took too long, cancel.
+            //if (DateTime.Now.Subtract(startTime).Seconds > 5) return true; // It took too long, cancel.
             return false;
         }
 
@@ -144,10 +46,17 @@ namespace MHFZASS
         {
             // Used to automatically terminate a search after a while.
             DateTime startTime = DateTime.Now;
-            List<ArmorSet> list = new List<ArmorSet>();
-
             List<Armor> matchesConditions = FindMatchingSets();
 
+            // A list of combinations fitting conditions.
+            //List<ArmorSet> matchingCombinations = new List<ArmorSet>();
+            Task.Run(() => StartCalculatingSets(matchesConditions));
+
+            return new List<ArmorSet>();
+        }
+
+        async void StartCalculatingSets(List<Armor> matchesConditions)
+        {
             // Get all armors for certain body parts based on the previous matches.
             // This will filter down from previous results.
             List<Armor> matchedHelmets = GetArmorsBySlot(matchesConditions, "頭");
@@ -156,63 +65,59 @@ namespace MHFZASS
             List<Armor> matchedWaists = GetArmorsBySlot(matchesConditions, "腰");
             List<Armor> matchedLegs = GetArmorsBySlot(matchesConditions, "脚");
 
-            // This is an easier way to access the minimum values for everything.
-            int minimumDefense = (int)numericUpDown1.Value,
-                minimumFire = (int)numericUpDown10.Value,
-                minimumWater = (int)numericUpDown9.Value,
-                minimumThunder = (int)numericUpDown8.Value,
-                minimumIce = (int)numericUpDown7.Value,
-                minimumDragon = (int)numericUpDown6.Value;
-
             foreach (Armor helmet in matchedHelmets)
             {
                 ArmorSet set = new ArmorSet();
-                if (ShouldTerminate(set, list.Count, startTime)) break;
+                if (ShouldTerminate(set, treeView1.Nodes.Count)) return;
+                if (cancelToken.IsCancellationRequested) return;
                 set.head = helmet;
 
                 foreach (Armor torso in matchedTorsos)
-                {
-                    if (ShouldTerminate(set, list.Count, startTime)) break;
+                {   
+                    if (ShouldTerminate(set, treeView1.Nodes.Count)) return;
+                    if (cancelToken.IsCancellationRequested) return;
                     set.torso = torso;
 
                     foreach (Armor arms in matchedArms)
                     {
-                        if (ShouldTerminate(set, list.Count, startTime)) break;
+                        if (ShouldTerminate(set, treeView1.Nodes.Count)) return;
+                        if (cancelToken.IsCancellationRequested) return;
                         set.arms = arms;
 
                         foreach (Armor waist in matchedWaists)
                         {
-                            if (ShouldTerminate(set, list.Count, startTime)) break;
+                            if (ShouldTerminate(set, treeView1.Nodes.Count)) return;
+                            if (cancelToken.IsCancellationRequested) return;
                             set.waist = waist;
 
                             foreach (Armor legs in matchedLegs)
                             {
-                                if (ShouldTerminate(set, list.Count, startTime)) break;
+                                if (ShouldTerminate(set, treeView1.Nodes.Count)) return;
+                                if (cancelToken.IsCancellationRequested) return;
+
                                 set.legs = legs;
+                                set.resistances = set.CalculateResistances();
 
-                                set.resistances = GetDefense(set);
-
-                                // Check against the different minimum filters.
-                                // This should be it's own function idealy.
-                                if (set.resistances.defense < minimumDefense) continue;
-                                if (set.resistances.fire < minimumFire) continue;
-                                if (set.resistances.ice < minimumIce) continue;
-                                if (set.resistances.thunder < minimumThunder) continue;
-                                if (set.resistances.water < minimumWater) continue;
-                                if (set.resistances.dragon < minimumDragon) continue;
-
-                                List<string> skillList = FitsConditions(set);
-                                if (skillList == null) continue;
-
-                                set.activatedSkills = skillList;
-                                list.Add(set);
+                                AddToList(set);
+                                UpdateProgressBar(1000);
                             }
                         }
                     }
                 }
             }
+        }
 
-            return list;
+        void UpdateProgressBar(int total)
+        {
+            if (InvokeRequired)
+            {
+                Invoke((Action<int>)UpdateProgressBar, total);
+                return;
+            }
+
+            progressBar1.Value = (treeView1.Nodes.Count / total) * 100;
+            label11.Text = treeView1.Nodes.Count.ToString();
+            
         }
 
         List<Armor> GetArmorsBySlot(List<Armor> matching, string type)
@@ -227,76 +132,29 @@ namespace MHFZASS
             return list;
         }
 
-        struct Resistances
+        void AddToList(ArmorSet set)
         {
-            public int defense;
-            public int fire;
-            public int water;
-            public int thunder;
-            public int ice;
-            public int dragon;
+            if (InvokeRequired)
+            {
+                Invoke((Action<ArmorSet>)AddToList, set);
+                return;
+            }
+
+            List<string> skillList = FitsConditions(set);
+
+            if (skillList == null) return;
+
+            set.activatedSkills = skillList;
+            AddSetToTree(set);
         }
 
-        // Check the stat based conditions.
-        static Resistances GetDefense(ArmorSet set)
+        List<string> FitsConditions(ArmorSet set)
         {
-            Resistances res = new Resistances();
+            if (!FitsSearchConditions(set)) return null;
 
-            Armor[] pieces = new Armor[] { set.head, set.torso, set.arms, set.waist, set.legs };
+            Dictionary<string, int> skills = set.GetSkillMap();
+            List<string> activatedSkills = new List<string>();
 
-            foreach (Armor armor in pieces)
-            {
-                double defenseMultiplier = 0.05 * 7;
-                int defenseModifier = (int)Math.Ceiling(armor.baseDefense * defenseMultiplier);
-                res.defense += armor.baseDefense + defenseModifier;
-                res.fire += armor.fireRes;
-                res.water += armor.waterRes;
-                res.ice += armor.iceRes;
-                res.dragon += armor.dragonRes;
-                res.thunder += armor.thunderRes;
-            }
-
-            return res;
-        }
-
-        // Get all of the skills on a piece of gear.
-        Dictionary<string, int> GetAllSkillsForSet(ArmorSet set)
-        {
-            Dictionary<string, int> skills = new Dictionary<string, int>();
-            foreach (Skill skill in GetCombinedSkills(set.head))
-            {
-                if (!skills.ContainsKey(skill.name)) skills[skill.name] = 0;
-                skills[skill.name] += skill.points;
-            }
-            foreach (Skill skill in GetCombinedSkills(set.torso))
-            {
-                if (!skills.ContainsKey(skill.name)) skills[skill.name] = 0;
-                skills[skill.name] += skill.points;
-            }
-            foreach (Skill skill in GetCombinedSkills(set.arms))
-            {
-                if (!skills.ContainsKey(skill.name)) skills[skill.name] = 0;
-                skills[skill.name] += skill.points;
-            }
-            foreach (Skill skill in GetCombinedSkills(set.waist))
-            {
-                if (!skills.ContainsKey(skill.name)) skills[skill.name] = 0;
-                skills[skill.name] += skill.points;
-            }
-            foreach (Skill skill in GetCombinedSkills(set.legs))
-            {
-                if (!skills.ContainsKey(skill.name)) skills[skill.name] = 0;
-                skills[skill.name] += skill.points;
-            }
-
-            return skills;
-        }
-
-        List<String> FitsConditions(ArmorSet set)
-        {
-            Dictionary<string, int> skills = GetAllSkillsForSet(set);
-
-            List<string> activatedSkills = new List<String>();
             foreach(string skill in skills.Keys)
             {
                 if (skills[skill] >= 10) activatedSkills.Add(skill);
@@ -320,29 +178,25 @@ namespace MHFZASS
             return activatedSkills;
         }
 
-        List<Skill> GetCombinedSkills(Armor armor)
+        bool FitsSearchConditions(ArmorSet set)
         {
-            List<Skill> combinedSkills = new List<Skill>();
-            Dictionary<string, int> skillPointMapping = new Dictionary<string, int>();
-            List<Skill> finalSkills = new List<Skill>();
-            
-            combinedSkills.Add(new Skill(armor.skillId1, armor.skillPts1));
-            combinedSkills.Add(new Skill(armor.skillId2, armor.skillPts2));
-            combinedSkills.Add(new Skill(armor.skillId3, armor.skillPts3));
-            combinedSkills.Add(new Skill(armor.skillId4, armor.skillPts4));
+            // This is an easier way to access the minimum values for everything.
+            int minimumDefense = (int)numericUpDown1.Value,
+                minimumFire = (int)numericUpDown10.Value,
+                minimumWater = (int)numericUpDown9.Value,
+                minimumThunder = (int)numericUpDown8.Value,
+                minimumIce = (int)numericUpDown7.Value,
+                minimumDragon = (int)numericUpDown6.Value;
 
-            foreach (Skill skill in combinedSkills)
-            {
-                if (!skillPointMapping.ContainsKey(skill.name)) skillPointMapping[skill.name] = 0;
-                skillPointMapping[skill.name] += skill.points;
-            }
+            // Check if any of the resistances does not fit within the search conditions
+            if (set.resistances.defense < minimumDefense
+                || set.resistances.fire < minimumFire
+                || set.resistances.water < minimumWater
+                || set.resistances.thunder < minimumThunder
+                || set.resistances.ice < minimumIce
+                || set.resistances.dragon < minimumDragon) return false;
 
-            foreach (string key in skillPointMapping.Keys)
-            {
-                finalSkills.Add(new Skill(key, skillPointMapping[key]));
-            }
-
-            return finalSkills;
+            return true;
         }
 
         // Find a smaller list of armors that have the skill you want.
@@ -433,43 +287,48 @@ namespace MHFZASS
             return 0;
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        void AddSetToTree(ArmorSet armorSet)
         {
+            TreeNode node = treeView1.Nodes.Add("Set " + treeView1.Nodes.Count);
+
+            node.Nodes.Add(armorSet.head.name);
+            node.Nodes.Add(armorSet.torso.name);
+            node.Nodes.Add(armorSet.arms.name);
+            node.Nodes.Add(armorSet.waist.name);
+            node.Nodes.Add(armorSet.legs.name);
+
+            // Defenses and elemental resistances
+            node.Nodes.Add("Defense: " + armorSet.resistances.defense);
+
+            node.Nodes.Add("Fire: " + armorSet.resistances.fire);
+            node.Nodes.Add("Water: " + armorSet.resistances.water);
+            node.Nodes.Add("Thunder: " + armorSet.resistances.thunder);
+            node.Nodes.Add("Dragon: " + armorSet.resistances.dragon);
+            node.Nodes.Add("Ice: " + armorSet.resistances.ice);
+
+            node.Nodes.Add($"Skills ({armorSet.activatedSkills.Count}):");
+
+            foreach (string skill in armorSet.activatedSkills)
+            {
+                node.Nodes.Add(skill);
+            }
+        }
+
+        private async void button1_Click(object sender, EventArgs e)
+        {
+            if (button1.Text == "Stop")
+            {
+                button1.Text = "Search";
+                cancelToken.Cancel();
+            }
+
+            treeView1.Nodes.Clear(); // Clear the tree
+            button1.Text = "Stop";
+
             List<ArmorSet> compatibleSets = FindSets();
             compatibleSets = SortSets(compatibleSets);
 
-            treeView1.Nodes.Clear(); // Empty the list.
-
-            int setNumber = 0;
-
-            foreach (ArmorSet armorSet in compatibleSets)
-            {
-                TreeNode node = treeView1.Nodes.Add("Set " + setNumber);
-
-                node.Nodes.Add(armorSet.head.name);
-                node.Nodes.Add(armorSet.torso.name);
-                node.Nodes.Add(armorSet.arms.name);
-                node.Nodes.Add(armorSet.waist.name);
-                node.Nodes.Add(armorSet.legs.name);
-
-                // Defenses and elemental resistances
-                node.Nodes.Add("Defense: " + armorSet.resistances.defense);
-
-                node.Nodes.Add("Fire: " + armorSet.resistances.fire);
-                node.Nodes.Add("Water: " + armorSet.resistances.water);
-                node.Nodes.Add("Thunder: " + armorSet.resistances.thunder);
-                node.Nodes.Add("Dragon: " + armorSet.resistances.dragon);
-                node.Nodes.Add("Ice: " + armorSet.resistances.ice);
-
-                node.Nodes.Add($"Skills ({armorSet.activatedSkills.Count}):");
-
-                foreach (string skill in armorSet.activatedSkills)
-                {
-                    node.Nodes.Add(skill);
-                }
-
-                setNumber++;
-            }
+            button1.Text = "Search";
         }
     }
 }
