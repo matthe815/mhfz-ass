@@ -56,6 +56,7 @@
             this.comboBox6 = new System.Windows.Forms.ComboBox();
             this.label8 = new System.Windows.Forms.Label();
             this.label9 = new System.Windows.Forms.Label();
+            this.progressBar1 = new System.Windows.Forms.ProgressBar();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown3)).BeginInit();
@@ -106,7 +107,7 @@
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(183, 23);
             this.button1.TabIndex = 5;
-            this.button1.Text = "button1";
+            this.button1.Text = " Search";
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
@@ -121,9 +122,9 @@
             // 
             // treeView1
             // 
-            this.treeView1.Location = new System.Drawing.Point(404, 12);
+            this.treeView1.Location = new System.Drawing.Point(404, 41);
             this.treeView1.Name = "treeView1";
-            this.treeView1.Size = new System.Drawing.Size(385, 426);
+            this.treeView1.Size = new System.Drawing.Size(385, 397);
             this.treeView1.TabIndex = 7;
             // 
             // numericUpDown1
@@ -329,11 +330,19 @@
             this.label9.TabIndex = 28;
             this.label9.Text = "Gender";
             // 
+            // progressBar1
+            // 
+            this.progressBar1.Location = new System.Drawing.Point(404, 12);
+            this.progressBar1.Name = "progressBar1";
+            this.progressBar1.Size = new System.Drawing.Size(385, 23);
+            this.progressBar1.TabIndex = 29;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
+            this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.label9);
             this.Controls.Add(this.label8);
             this.Controls.Add(this.comboBox6);
@@ -363,7 +372,7 @@
             this.Controls.Add(this.comboBox2);
             this.Controls.Add(this.comboBox1);
             this.Name = "Form1";
-            this.Text = "Form1";
+            this.Text = "MHFZ Armor Set Search";
             this.Load += new System.EventHandler(this.Form1_Load);
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown2)).EndInit();
@@ -410,5 +419,6 @@
         private ComboBox comboBox6;
         private Label label8;
         private Label label9;
+        private ProgressBar progressBar1;
     }
 }

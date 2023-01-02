@@ -259,7 +259,8 @@ namespace MHFZASS
             return res;
         }
 
-        List<String> FitsConditions(ArmorSet set)
+        // Get all of the skills on a piece of gear.
+        Dictionary<string, int> GetAllSkillsForSet(ArmorSet set)
         {
             Dictionary<string, int> skills = new Dictionary<string, int>();
             foreach (Skill skill in GetCombinedSkills(set.head))
@@ -287,11 +288,21 @@ namespace MHFZASS
                 if (!skills.ContainsKey(skill.name)) skills[skill.name] = 0;
                 skills[skill.name] += skill.points;
             }
+
+            return skills;
+        }
+
+        List<String> FitsConditions(ArmorSet set)
+        {
+            Dictionary<string, int> skills = GetAllSkillsForSet(set);
+
             List<string> activatedSkills = new List<String>();
             foreach(string skill in skills.Keys)
             {
                 if (skills[skill] >= 10) activatedSkills.Add(skill);
             }
+
+            // Take all of the desired skills and compare them to what we have.
             string[] needed = new string[] { comboBox1.SelectedItem.ToString(), comboBox2.SelectedItem.ToString(), comboBox3.SelectedItem.ToString(), comboBox4.SelectedItem.ToString() };
             // Check if the activated skills are present
             foreach(string skill in needed)
@@ -300,20 +311,19 @@ namespace MHFZASS
                 if (activatedSkills.ToArray().Contains(skill)) continue;
                 if (skill != "なし") return null; // Else skip this set.
             }
+
             // Check if the skill's level is high enough
             if (comboBox1.SelectedItem.ToString() != "なし" && skills[comboBox1.SelectedItem.ToString()] < numericUpDown7.Value) return null;
             if (comboBox2.SelectedItem.ToString() != "なし" && skills[comboBox2.SelectedItem.ToString()] < numericUpDown8.Value) return null;
             if (comboBox3.SelectedItem.ToString() != "なし" && skills[comboBox3.SelectedItem.ToString()] < numericUpDown9.Value) return null;
             if (comboBox4.SelectedItem.ToString() != "なし" && skills[comboBox4.SelectedItem.ToString()] < numericUpDown10.Value) return null;
-
-            set.activatedSkills = activatedSkills;
             return activatedSkills;
         }
 
         List<Skill> GetCombinedSkills(Armor armor)
         {
             List<Skill> combinedSkills = new List<Skill>();
-            Dictionary<string, int> skils = new Dictionary<string, int>();
+            Dictionary<string, int> skillPointMapping = new Dictionary<string, int>();
             List<Skill> finalSkills = new List<Skill>();
             
             combinedSkills.Add(new Skill(armor.skillId1, armor.skillPts1));
@@ -323,13 +333,13 @@ namespace MHFZASS
 
             foreach (Skill skill in combinedSkills)
             {
-                if (!skils.ContainsKey(skill.name)) skils[skill.name] = 0;
-                skils[skill.name] += skill.points;
+                if (!skillPointMapping.ContainsKey(skill.name)) skillPointMapping[skill.name] = 0;
+                skillPointMapping[skill.name] += skill.points;
             }
 
-            foreach (string key in skils.Keys)
+            foreach (string key in skillPointMapping.Keys)
             {
-                finalSkills.Add(new Skill(key, skils[key]));
+                finalSkills.Add(new Skill(key, skillPointMapping[key]));
             }
 
             return finalSkills;
