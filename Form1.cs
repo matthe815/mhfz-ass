@@ -74,7 +74,6 @@ namespace MHFZASS
             {
                 if (percent > 100) percent = 100;
                 progressBar1.Value = percent;
-                label11.Text = treeView1.Nodes.Count.ToString();
             });
 
             Task.Run(() => StartCalculatingSets(matchesConditions, progress));
@@ -255,8 +254,8 @@ namespace MHFZASS
                 if (!armor.isBladeEquip && weaponType == 0) continue;
                 if (!armor.isGunnerEquip && weaponType == 1) continue;
 
-                if (comboBox7.SelectedIndex != 2 && armor.name.Contains("G")) continue;
-                if (comboBox7.SelectedIndex != 3 && armor.name.Contains("Z")) continue;
+                if (comboBox7.SelectedIndex < 1 && (armor.name.Contains("G") || armor.name.Contains("Ｇ"))) continue;
+                if (comboBox7.SelectedIndex < 2 && (armor.name.Contains("Z") || armor.name.Contains("Ｚ"))) continue;
 
                 // Skip over bad results.
                 if (armor.baseDefense < (minimumDefense / 8)) continue;

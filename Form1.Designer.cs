@@ -57,8 +57,6 @@
             this.label8 = new System.Windows.Forms.Label();
             this.label9 = new System.Windows.Forms.Label();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
-            this.label10 = new System.Windows.Forms.Label();
-            this.label11 = new System.Windows.Forms.Label();
             this.comboBox7 = new System.Windows.Forms.ComboBox();
             this.label12 = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.numericUpDown1)).BeginInit();
@@ -341,26 +339,6 @@
             this.progressBar1.Size = new System.Drawing.Size(385, 23);
             this.progressBar1.TabIndex = 29;
             // 
-            // label10
-            // 
-            this.label10.AutoSize = true;
-            this.label10.Location = new System.Drawing.Point(385, 20);
-            this.label10.Name = "label10";
-            this.label10.Size = new System.Drawing.Size(13, 15);
-            this.label10.TabIndex = 30;
-            this.label10.Text = "0";
-            this.label10.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // label11
-            // 
-            this.label11.AutoSize = true;
-            this.label11.Location = new System.Drawing.Point(385, 9);
-            this.label11.Name = "label11";
-            this.label11.Size = new System.Drawing.Size(13, 15);
-            this.label11.TabIndex = 31;
-            this.label11.Text = "0";
-            this.label11.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
             // comboBox7
             // 
             this.comboBox7.FormattingEnabled = true;
@@ -389,8 +367,6 @@
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Controls.Add(this.label12);
             this.Controls.Add(this.comboBox7);
-            this.Controls.Add(this.label11);
-            this.Controls.Add(this.label10);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.label9);
             this.Controls.Add(this.label8);
@@ -469,8 +445,6 @@
         private Label label8;
         private Label label9;
         private ProgressBar progressBar1;
-        private Label label10;
-        private Label label11;
         private ComboBox comboBox7;
         private Label label12;
     }
