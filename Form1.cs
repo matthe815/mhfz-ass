@@ -90,6 +90,7 @@ namespace MHFZASS
             public Armor legs;
 
             public Resistances resistances;
+            public List<String> activatedSkills;
 
             public ArmorSet()
             {
@@ -99,6 +100,7 @@ namespace MHFZASS
                 waist = new Armor();
                 legs = new Armor();
                 resistances = new Resistances();
+                activatedSkills = new List<String>();
             }
         }
 
@@ -126,88 +128,83 @@ namespace MHFZASS
             comboBox2.SelectedIndex = 0;
             comboBox3.SelectedIndex = 0;
             comboBox4.SelectedIndex = 0;
+            comboBox5.SelectedIndex = 0;
+            comboBox6.SelectedIndex = 0;
+        }
+
+        bool ShouldTerminate(ArmorSet set, int count, DateTime startTime)
+        {
+            // Truncate here
+            if (count > 1000) return true;
+            if (DateTime.Now.Subtract(startTime).Seconds > 5) return true; // It took too long, cancel.
+            return false;
         }
 
         List<ArmorSet> FindSets()
         {
+            // Used to automatically terminate a search after a while.
+            DateTime startTime = DateTime.Now;
             List<ArmorSet> list = new List<ArmorSet>();
 
             List<Armor> matchesConditions = FindMatchingSets();
-            List<Armor> helms = GetArmorOfType(matchesConditions, "頭");
-            List<Armor> torsos = GetArmorOfType(matchesConditions, "胴");
-            List<Armor> armsss = GetArmorOfType(matchesConditions, "腕");
-            List<Armor> waists = GetArmorOfType(matchesConditions, "腰");
-            List<Armor> legsss = GetArmorOfType(matchesConditions, "脚");
 
-            int minimumDefense = (int)numericUpDown1.Value;
-            int minimumFire = (int)numericUpDown10.Value;
-            int minimumWater = (int)numericUpDown9.Value;
-            int minimumThunder = (int)numericUpDown8.Value;
-            int minimumIce = (int)numericUpDown7.Value;
-            int minimumDragon = (int)numericUpDown6.Value;
+            // Get all armors for certain body parts based on the previous matches.
+            // This will filter down from previous results.
+            List<Armor> matchedHelmets = GetArmorsBySlot(matchesConditions, "頭");
+            List<Armor> matchedTorsos = GetArmorsBySlot(matchesConditions, "胴");
+            List<Armor> matchedArms = GetArmorsBySlot(matchesConditions, "腕");
+            List<Armor> matchedWaists = GetArmorsBySlot(matchesConditions, "腰");
+            List<Armor> matchedLegs = GetArmorsBySlot(matchesConditions, "脚");
 
-            foreach (Armor helmet in helms)
+            // This is an easier way to access the minimum values for everything.
+            int minimumDefense = (int)numericUpDown1.Value,
+                minimumFire = (int)numericUpDown10.Value,
+                minimumWater = (int)numericUpDown9.Value,
+                minimumThunder = (int)numericUpDown8.Value,
+                minimumIce = (int)numericUpDown7.Value,
+                minimumDragon = (int)numericUpDown6.Value;
+
+            foreach (Armor helmet in matchedHelmets)
             {
-
                 ArmorSet set = new ArmorSet();
+                if (ShouldTerminate(set, list.Count, startTime)) break;
                 set.head = helmet;
 
-                // Truncate here
-                if (list.Count > 1000) break;
-
-                // Skip over bad results.
-                if (helmet.baseDefense < (minimumDefense / 8)) continue;
-
-                foreach (Armor torso in torsos)
+                foreach (Armor torso in matchedTorsos)
                 {
+                    if (ShouldTerminate(set, list.Count, startTime)) break;
                     set.torso = torso;
 
-                    // Truncate here
-                    if (list.Count > 1000) break;
-
-                    // Skip over bad results.
-                    if (torso.baseDefense < (minimumDefense / 8)) continue;
-
-                    foreach (Armor arms in armsss)
+                    foreach (Armor arms in matchedArms)
                     {
+                        if (ShouldTerminate(set, list.Count, startTime)) break;
                         set.arms = arms;
 
-                        // Truncate here
-                        if (list.Count > 1000) break;
-
-                        // Skip over bad results.
-                        if (arms.baseDefense < (minimumDefense / 8)) continue;
-
-                        foreach (Armor waist in waists)
+                        foreach (Armor waist in matchedWaists)
                         {
+                            if (ShouldTerminate(set, list.Count, startTime)) break;
                             set.waist = waist;
 
-                            // Truncate here
-                            if (list.Count > 1000) break;
-
-                            // Skip over bad results.
-                            if (waist.baseDefense < (minimumDefense / 8)) continue;
-
-                            foreach (Armor legs in legsss)
+                            foreach (Armor legs in matchedLegs)
                             {
-                                // Skip over bad results.
-                                if (legs.baseDefense < (minimumDefense / 8)) continue;
-
-                                // Truncate here
-                                if (list.Count > 1000) break;
-
+                                if (ShouldTerminate(set, list.Count, startTime)) break;
                                 set.legs = legs;
 
                                 set.resistances = GetDefense(set);
 
+                                // Check against the different minimum filters.
+                                // This should be it's own function idealy.
                                 if (set.resistances.defense < minimumDefense) continue;
                                 if (set.resistances.fire < minimumFire) continue;
                                 if (set.resistances.ice < minimumIce) continue;
                                 if (set.resistances.thunder < minimumThunder) continue;
                                 if (set.resistances.water < minimumWater) continue;
                                 if (set.resistances.dragon < minimumDragon) continue;
-                                if (!FitsConditions(set)) continue;
 
+                                List<string> skillList = FitsConditions(set);
+                                if (skillList == null) continue;
+
+                                set.activatedSkills = skillList;
                                 list.Add(set);
                             }
                         }
@@ -218,7 +215,7 @@ namespace MHFZASS
             return list;
         }
 
-        List<Armor> GetArmorOfType(List<Armor> matching, string type)
+        List<Armor> GetArmorsBySlot(List<Armor> matching, string type)
         {
             List<Armor> list = new List<Armor>();
             
@@ -262,7 +259,7 @@ namespace MHFZASS
             return res;
         }
 
-        bool FitsConditions(ArmorSet set)
+        List<String> FitsConditions(ArmorSet set)
         {
             Dictionary<string, int> skills = new Dictionary<string, int>();
             foreach (Skill skill in GetCombinedSkills(set.head))
@@ -296,13 +293,21 @@ namespace MHFZASS
                 if (skills[skill] >= 10) activatedSkills.Add(skill);
             }
             string[] needed = new string[] { comboBox1.SelectedItem.ToString(), comboBox2.SelectedItem.ToString(), comboBox3.SelectedItem.ToString(), comboBox4.SelectedItem.ToString() };
+            // Check if the activated skills are present
             foreach(string skill in needed)
             {
                 // If you have that skill, move on.
-                if (activatedSkills.ToArray().Contains(skill)) break;
-                if (skill != "なし") return false; // Else skip this set.
+                if (activatedSkills.ToArray().Contains(skill)) continue;
+                if (skill != "なし") return null; // Else skip this set.
             }
-            return true;
+            // Check if the skill's level is high enough
+            if (comboBox1.SelectedItem.ToString() != "なし" && skills[comboBox1.SelectedItem.ToString()] < numericUpDown7.Value) return null;
+            if (comboBox2.SelectedItem.ToString() != "なし" && skills[comboBox2.SelectedItem.ToString()] < numericUpDown8.Value) return null;
+            if (comboBox3.SelectedItem.ToString() != "なし" && skills[comboBox3.SelectedItem.ToString()] < numericUpDown9.Value) return null;
+            if (comboBox4.SelectedItem.ToString() != "なし" && skills[comboBox4.SelectedItem.ToString()] < numericUpDown10.Value) return null;
+
+            set.activatedSkills = activatedSkills;
+            return activatedSkills;
         }
 
         List<Skill> GetCombinedSkills(Armor armor)
@@ -335,6 +340,7 @@ namespace MHFZASS
         {
             List<Armor> matchingArmors = new List<Armor>();
 
+            int minimumDefense = (int)numericUpDown1.Value;
             string skill1 = comboBox1.SelectedItem.ToString();
             string skill2 = comboBox2.SelectedItem.ToString();
             string skill3 = comboBox3.SelectedItem.ToString();
@@ -356,7 +362,10 @@ namespace MHFZASS
                 if (!armor.isFemaleEquip && gender == 1) continue;
 
                 if (!armor.isBladeEquip && weaponType == 0) continue;
-                if (!armor.isGunnerEquip && weaponType == 1) continue;
+                if (!armor.isGunnerEquip && weaponType == 1) continue; 
+                
+                // Skip over bad results.
+                if (armor.baseDefense < (minimumDefense / 8)) continue;
 
                 string[] skills = new string[] { armor.skillId1, armor.skillId2, armor.skillId3, armor.skillId4 };
 
@@ -441,6 +450,13 @@ namespace MHFZASS
                 node.Nodes.Add("Thunder: " + armorSet.resistances.thunder);
                 node.Nodes.Add("Dragon: " + armorSet.resistances.dragon);
                 node.Nodes.Add("Ice: " + armorSet.resistances.ice);
+
+                node.Nodes.Add($"Skills ({armorSet.activatedSkills.Count}):");
+
+                foreach (string skill in armorSet.activatedSkills)
+                {
+                    node.Nodes.Add(skill);
+                }
 
                 setNumber++;
             }
