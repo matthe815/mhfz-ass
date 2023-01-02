@@ -16,7 +16,6 @@ namespace MHFZASS
         private void Form1_Load(object sender, EventArgs e)
         {
             LoadArmors();
-            LoadArmorSkills();
 
             foreach (Skill skill in skills)
             {
@@ -37,7 +36,7 @@ namespace MHFZASS
         bool ShouldTerminate(ArmorSet set, int count)
         {
             // Truncate here
-            if (count > 1000) return true;
+            if (count >= 1000) return true;
             //if (DateTime.Now.Subtract(startTime).Seconds > 5) return true; // It took too long, cancel.
             return false;
         }
@@ -50,12 +49,19 @@ namespace MHFZASS
 
             // A list of combinations fitting conditions.
             //List<ArmorSet> matchingCombinations = new List<ArmorSet>();
-            Task.Run(() => StartCalculatingSets(matchesConditions));
+            var progress = new Progress<int>(percent =>
+            {
+                if (percent > 100) percent = 100;
+                progressBar1.Value = percent;
+                label11.Text = treeView1.Nodes.Count.ToString();
+            });
+
+            Task.Run(() => StartCalculatingSets(matchesConditions, progress));
 
             return new List<ArmorSet>();
         }
 
-        async void StartCalculatingSets(List<Armor> matchesConditions)
+        void StartCalculatingSets(List<Armor> matchesConditions, IProgress<int> progress)
         {
             // Get all armors for certain body parts based on the previous matches.
             // This will filter down from previous results.
@@ -65,6 +71,8 @@ namespace MHFZASS
             List<Armor> matchedWaists = GetArmorsBySlot(matchesConditions, "腰");
             List<Armor> matchedLegs = GetArmorsBySlot(matchesConditions, "脚");
 
+            int matched = 0;
+
             foreach (Armor helmet in matchedHelmets)
             {
                 ArmorSet set = new ArmorSet();
@@ -73,7 +81,7 @@ namespace MHFZASS
                 set.head = helmet;
 
                 foreach (Armor torso in matchedTorsos)
-                {   
+                {
                     if (ShouldTerminate(set, treeView1.Nodes.Count)) return;
                     if (cancelToken.IsCancellationRequested) return;
                     set.torso = torso;
@@ -99,25 +107,16 @@ namespace MHFZASS
                                 set.resistances = set.CalculateResistances();
 
                                 AddToList(set);
-                                UpdateProgressBar(1000);
+
+                                matched++;
+                                progress.Report((matched / 1000) * 100);
                             }
                         }
                     }
                 }
             }
-        }
 
-        void UpdateProgressBar(int total)
-        {
-            if (InvokeRequired)
-            {
-                Invoke((Action<int>)UpdateProgressBar, total);
-                return;
-            }
-
-            progressBar1.Value = (treeView1.Nodes.Count / total) * 100;
-            label11.Text = treeView1.Nodes.Count.ToString();
-            
+            progress.Report(100);
         }
 
         List<Armor> GetArmorsBySlot(List<Armor> matching, string type)
@@ -253,6 +252,16 @@ namespace MHFZASS
                     armors.Add(armor);
                 }
             }
+
+            LoadArmorSkills(); // Load skills before sorting armor.
+
+            armors.Sort((armor1, armor2) =>
+            {
+                if (armor1.baseDefense < armor2.baseDefense) return 1;
+                if (armor1.baseDefense > armor2.baseDefense) return -1;
+
+                return 0;
+            });
         }
 
 
@@ -297,14 +306,19 @@ namespace MHFZASS
             node.Nodes.Add(armorSet.waist.name);
             node.Nodes.Add(armorSet.legs.name);
 
+            node.Nodes.Add("------");
+
             // Defenses and elemental resistances
             node.Nodes.Add("Defense: " + armorSet.resistances.defense);
 
-            node.Nodes.Add("Fire: " + armorSet.resistances.fire);
-            node.Nodes.Add("Water: " + armorSet.resistances.water);
-            node.Nodes.Add("Thunder: " + armorSet.resistances.thunder);
-            node.Nodes.Add("Dragon: " + armorSet.resistances.dragon);
-            node.Nodes.Add("Ice: " + armorSet.resistances.ice);
+            node.Nodes.Add("--- Damage Reduction --- ");
+            double damageReduction = Math.Ceiling((armorSet.resistances.defense * 0.2));
+            node.Nodes.Add($"Physical: {damageReduction}%");
+            node.Nodes.Add($"Fire: {armorSet.resistances.fire}%");
+            node.Nodes.Add($"Water: {armorSet.resistances.water}%");
+            node.Nodes.Add($"Thunder: {armorSet.resistances.thunder}%");
+            node.Nodes.Add($"Ice: {armorSet.resistances.ice}%");
+            node.Nodes.Add($"Dragon: {armorSet.resistances.dragon}%");
 
             node.Nodes.Add($"Skills ({armorSet.activatedSkills.Count}):");
 
@@ -314,21 +328,12 @@ namespace MHFZASS
             }
         }
 
-        private async void button1_Click(object sender, EventArgs e)
+        private void button1_Click(object sender, EventArgs e)
         {
-            if (button1.Text == "Stop")
-            {
-                button1.Text = "Search";
-                cancelToken.Cancel();
-            }
-
             treeView1.Nodes.Clear(); // Clear the tree
-            button1.Text = "Stop";
 
             List<ArmorSet> compatibleSets = FindSets();
             compatibleSets = SortSets(compatibleSets);
-
-            button1.Text = "Search";
         }
     }
 }
