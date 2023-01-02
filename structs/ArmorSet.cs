@@ -33,14 +33,54 @@
                 double defenseMultiplier = 0.05 * 7;
                 int defenseModifier = (int)Math.Ceiling(armor.baseDefense * defenseMultiplier);
                 res.defense += armor.baseDefense + defenseModifier;
-                res.fire += armor.fireRes;
-                res.water += armor.waterRes;
-                res.ice += armor.iceRes;
-                res.dragon += armor.dragonRes;
-                res.thunder += armor.thunderRes;
+
+                switch (HasSkill("防御"))
+                {
+                    case 10:
+                        res.defense += 20;
+                        break;
+                    case 15:
+                        res.defense += 30;
+                        break;
+                    case 25:
+                        res.defense += 60;
+                        break;
+                    case 35:
+                        res.defense += 90;
+                        break;
+                    case 45:
+                        res.defense += 120;
+                        break;
+                }
+
+                res.fire += armor.fireRes + HasSkill("火耐性");
+                res.water += armor.waterRes + HasSkill("水耐性");
+                res.ice += armor.iceRes + HasSkill("氷耐性");
+                res.dragon += armor.dragonRes + HasSkill("龍耐性");
+                res.thunder += armor.thunderRes + HasSkill("雷耐性");
             }
 
             return res;
+        }
+
+        public int GetSlots()
+        {
+            int totalSlots = 0;
+
+            totalSlots += head.maxSlots;
+            totalSlots += torso.maxSlots;
+            totalSlots += arms.maxSlots;
+            totalSlots += waist.maxSlots;
+            totalSlots += legs.maxSlots;
+
+            return totalSlots;
+        }
+
+        // Check if the set has a skill.
+        public int HasSkill(string name)
+        {
+            Dictionary<string, int> map = GetSkillMap();
+            return map.ContainsKey(name) == true ? map[name] : 0;
         }
 
         // Get all of the skills on a piece of gear.

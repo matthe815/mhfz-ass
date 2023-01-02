@@ -335,11 +335,13 @@ namespace MHFZASS
         {
             TreeNode node = treeView1.Nodes.Add("Set " + treeView1.Nodes.Count);
 
-            node.Nodes.Add(armorSet.head.name);
-            node.Nodes.Add(armorSet.torso.name);
-            node.Nodes.Add(armorSet.arms.name);
-            node.Nodes.Add(armorSet.waist.name);
-            node.Nodes.Add(armorSet.legs.name);
+            node.Nodes.Add(armorSet.head.GetName());
+            node.Nodes.Add(armorSet.torso.GetName());
+            node.Nodes.Add(armorSet.arms.GetName());
+            node.Nodes.Add(armorSet.waist.GetName());
+            node.Nodes.Add(armorSet.legs.GetName());
+
+            node.Nodes.Add($"Slots: {armorSet.GetSlots()}");
 
             node.Nodes.Add("------");
 
@@ -355,7 +357,7 @@ namespace MHFZASS
             node.Nodes.Add($"Ice: {armorSet.resistances.ice}%");
             node.Nodes.Add($"Dragon: {armorSet.resistances.dragon}%");
 
-            node.Nodes.Add("------");
+            node.Nodes.Add($"--- Skills ({armorSet.activatedSkills.Count}) ---");
 
             node.Nodes.Add($"Skills ({armorSet.activatedSkills.Count}):");
 

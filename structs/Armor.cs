@@ -88,5 +88,14 @@
 
             return finalSkills;
         }
+
+        public string GetName()
+        {
+            string slottedName = $"{this.name} -- ";
+
+            for (int i = 0; i < this.maxSlots; i++) slottedName += "O";
+
+            return slottedName;
+        }
     }
 }
