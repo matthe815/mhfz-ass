@@ -13,16 +13,36 @@ namespace MHFZASS
             InitializeComponent();
         }
 
+        class SkillListItem
+        {
+            public string id;
+            string name;
+
+            public SkillListItem(string id, string name)
+            {
+                this.id = id;
+                this.name = name;
+            }
+
+            public override string ToString()
+            {
+                return this.name;
+            }
+        }
+
         private void Form1_Load(object sender, EventArgs e)
         {
             LoadArmors();
 
+            int lineNum = 0;
+
             foreach (Skill skill in skills)
             {
-                comboBox1.Items.Add(skill.name);
-                comboBox2.Items.Add(skill.name);
-                comboBox3.Items.Add(skill.name);
-                comboBox4.Items.Add(skill.name);
+                comboBox1.Items.Add(new SkillListItem(skill.name, skill.en_name));
+                comboBox2.Items.Add(new SkillListItem(skill.name, skill.en_name));
+                comboBox3.Items.Add(new SkillListItem(skill.name, skill.en_name));
+                comboBox4.Items.Add(new SkillListItem(skill.name, skill.en_name));
+                lineNum++;
             }
 
             comboBox1.SelectedIndex = 0;
@@ -31,6 +51,7 @@ namespace MHFZASS
             comboBox4.SelectedIndex = 0;
             comboBox5.SelectedIndex = 0;
             comboBox6.SelectedIndex = 0;
+            comboBox7.SelectedIndex = 0;
         }
 
         bool ShouldTerminate(ArmorSet set, int count)
@@ -159,8 +180,13 @@ namespace MHFZASS
                 if (skills[skill] >= 10) activatedSkills.Add(skill);
             }
 
+            SkillListItem skill1 = comboBox1.SelectedItem as SkillListItem;
+            SkillListItem skill2 = comboBox2.SelectedItem as SkillListItem;
+            SkillListItem skill3 = comboBox3.SelectedItem as SkillListItem;
+            SkillListItem skill4 = comboBox4.SelectedItem as SkillListItem;
+
             // Take all of the desired skills and compare them to what we have.
-            string[] needed = new string[] { comboBox1.SelectedItem.ToString(), comboBox2.SelectedItem.ToString(), comboBox3.SelectedItem.ToString(), comboBox4.SelectedItem.ToString() };
+            string[] needed = new string[] { skill1.id, skill2.id, skill3.id, skill4.id };
             // Check if the activated skills are present
             foreach(string skill in needed)
             {
@@ -169,11 +195,13 @@ namespace MHFZASS
                 if (skill != "なし") return null; // Else skip this set.
             }
 
+
+
             // Check if the skill's level is high enough
-            if (comboBox1.SelectedItem.ToString() != "なし" && skills[comboBox1.SelectedItem.ToString()] < numericUpDown7.Value) return null;
-            if (comboBox2.SelectedItem.ToString() != "なし" && skills[comboBox2.SelectedItem.ToString()] < numericUpDown8.Value) return null;
-            if (comboBox3.SelectedItem.ToString() != "なし" && skills[comboBox3.SelectedItem.ToString()] < numericUpDown9.Value) return null;
-            if (comboBox4.SelectedItem.ToString() != "なし" && skills[comboBox4.SelectedItem.ToString()] < numericUpDown10.Value) return null;
+            if (skill1.id != "なし" && skills[skill1.id] < numericUpDown7.Value) return null;
+            if (skill2.id != "なし" && skills[skill2.id] < numericUpDown8.Value) return null;
+            if (skill3.id != "なし" && skills[skill3.id] < numericUpDown9.Value) return null;
+            if (skill4.id != "なし" && skills[skill4.id] < numericUpDown10.Value) return null;
             return activatedSkills;
         }
 
@@ -204,10 +232,10 @@ namespace MHFZASS
             List<Armor> matchingArmors = new List<Armor>();
 
             int minimumDefense = (int)numericUpDown1.Value;
-            string skill1 = comboBox1.SelectedItem.ToString();
-            string skill2 = comboBox2.SelectedItem.ToString();
-            string skill3 = comboBox3.SelectedItem.ToString();
-            string skill4 = comboBox4.SelectedItem.ToString();
+            string skill1 = ((SkillListItem)comboBox1.SelectedItem).id;
+            string skill2 = ((SkillListItem)comboBox2.SelectedItem).id;
+            string skill3 = ((SkillListItem)comboBox3.SelectedItem).id;
+            string skill4 = ((SkillListItem)comboBox4.SelectedItem).id;
 
             int gender = comboBox6.SelectedIndex;
             int weaponType = comboBox5.SelectedIndex;
@@ -225,8 +253,11 @@ namespace MHFZASS
                 if (!armor.isFemaleEquip && gender == 1) continue;
 
                 if (!armor.isBladeEquip && weaponType == 0) continue;
-                if (!armor.isGunnerEquip && weaponType == 1) continue; 
-                
+                if (!armor.isGunnerEquip && weaponType == 1) continue;
+
+                if (comboBox7.SelectedIndex != 2 && armor.name.Contains("G")) continue;
+                if (comboBox7.SelectedIndex != 3 && armor.name.Contains("Z")) continue;
+
                 // Skip over bad results.
                 if (armor.baseDefense < (minimumDefense / 8)) continue;
 
@@ -268,6 +299,9 @@ namespace MHFZASS
         static void LoadArmorSkills()
         {
             List<string> eSkills = new List<string>();
+            string[] translations = File.ReadAllLines("./skills_en.txt");
+
+            int lineNum = 0;
 
             foreach (Armor armor in armors)
             {
@@ -279,7 +313,9 @@ namespace MHFZASS
             {
                 Skill skill = new Skill();
                 skill.name = eskill;
+                skill.en_name = translations[lineNum];
                 skills.Add(skill);
+                lineNum++;
             }
         }
 
@@ -320,12 +356,20 @@ namespace MHFZASS
             node.Nodes.Add($"Ice: {armorSet.resistances.ice}%");
             node.Nodes.Add($"Dragon: {armorSet.resistances.dragon}%");
 
+            node.Nodes.Add("------");
+
             node.Nodes.Add($"Skills ({armorSet.activatedSkills.Count}):");
 
-            foreach (string skill in armorSet.activatedSkills)
+            foreach (KeyValuePair<string, int> skill in armorSet.GetSkillMap())
             {
-                node.Nodes.Add(skill);
+                node.Nodes.Add($"{LocalizeKey(skill.Key)}: {skill.Value}");
             }
+        }
+
+        static string LocalizeKey (string key)
+        {
+            Skill skill = skills.Find((skill) => skill.name == key);
+            return skill.en_name;
         }
 
         private void button1_Click(object sender, EventArgs e)
